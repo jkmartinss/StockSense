@@ -26,6 +26,8 @@ $volumeOcupado = $resumo['volume'];
 $volumeDisponivel = $resumo['disponivel'];
 $ocupacao = $resumo['ocupacao'];
 $statusGeral = status_ocupacao($ocupacao);
+$comSensor = array_values(array_filter($prateleiras, fn($p) => $p['pct_sensor'] !== null));
+$leiturasRecentes = array_values(array_filter($comSensor, fn($p) => strtotime($p['sensor_criado_em']) >= time() - 86400));
 $porGalpao = [];
 foreach ($prateleiras as $p) {
     $porGalpao[$p['galpao_id']]['nome'] = $p['galpao_nome'];
@@ -142,6 +144,29 @@ $escopo = $galpaoAtual ? $galpaoAtual['nome'] : 'Todos os galpões';
 
 
 <p class="escopo-nota"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Capacidade operacional: <strong><?= m3($capacidadeTotal) ?></strong>. Indicadores de galpões e prateleiras ativos.</p>
+
+<section class="card comparacao-sensor">
+    <div class="card-topo"><div><h2>Cadastro × sensor</h2><p>Compare a ocupação registrada com a última medição de cada prateleira.</p></div>
+        <span class="contador"><?= count($leiturasRecentes) ?> leituras nas últimas 24 h</span></div>
+    <?php if (!$comSensor): ?>
+        <div class="card-corpo texto-fraco">Nenhuma prateleira deste filtro tem leitura do sensor.</div>
+    <?php else: ?>
+        <div class="comparacao-lista">
+        <?php foreach ($comSensor as $p): ?>
+            <?php $recente = strtotime($p['sensor_criado_em']) >= time() - 86400; $diferenca = abs((float) $p['pct_sensor'] - (float) $p['pct_ocupado']); ?>
+            <a class="comparacao-linha" href="index.php?pagina=detalhes_prateleira&id=<?= (int) $p['id'] ?>">
+                <strong><?= e($p['galpao_nome']) ?> · <?= e($p['codigo']) ?></strong>
+                <span>Cadastro <b><?= num($p['pct_ocupado'], 1) ?>%</b></span>
+                <span>Sensor <b><?= num($p['pct_sensor'], 1) ?>%</b></span>
+                <span class="etiqueta <?= !$recente ? 'inativo' : ($diferenca >= 10 ? 'atencao' : 'livre') ?>">
+                    <?= !$recente ? 'Leitura antiga' : ($diferenca >= 10 ? 'Diferença de ' . num($diferenca, 1) . ' p.p.' : 'Valores próximos') ?>
+                </span>
+                <small>Medido em <?= e(date('d/m/Y H:i', strtotime($p['sensor_criado_em']))) ?></small>
+            </a>
+        <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</section>
 
 <!-- ALERTA -->
 

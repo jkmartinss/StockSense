@@ -140,7 +140,7 @@
         const updateCapacity = () => {
           const available = capacitySelect.selectedOptions[0]?.dataset.livre;
           hint.hidden = available === undefined;
-          hint.textContent = available === undefined ? '' : `Espaço disponível: ${Number(available).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2})} m³`;
+          hint.textContent = available === undefined ? '' : `Espaço disponível: ${Number(available).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:7})} m³`;
         };
         capacitySelect.addEventListener('change', updateCapacity); updateCapacity();
       }
@@ -161,6 +161,7 @@
     document.title = doc.title;
     if (url.href !== location.href) history.pushState(null,'',url);
     initialize();
+    atualizarBotaoMedicao();
     filters.forEach(({key,value}) => {
       const el = [...document.querySelectorAll('[data-busca], .filtros select')].find(el => (el.dataset.busca || el.name) === key);
       if (el) { el.value = value; el.dispatchEvent(new Event(el.matches('select') ? 'change' : 'input')); }
@@ -219,5 +220,81 @@
   themeButton?.addEventListener('click',()=>{const theme=document.documentElement.dataset.tema==='escuro'?'claro':'escuro'; document.documentElement.dataset.tema=theme; try{localStorage.setItem('stocksense-tema',theme);}catch{} themeLabel();});
   const clock=document.getElementById('relogio');
   if(clock){const update=()=>clock.textContent=new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}); update(); setInterval(update,30000);}
+  document.addEventListener('click', async event => {
+    const button = event.target.closest('[data-medir-ocupacao]');
+    if (!button || button.disabled) return;
+    const form = button.closest('form');
+    const select = form.querySelector('[name="prateleira_id"]');
+    const volume = form.querySelector('[name="volume_m3"]');
+    const status = form.querySelector('[data-medicao-ocupacao-status]');
+    const conta = form.querySelector('[data-medicao-conta]');
+    const prateleiraId = select.value;
+    if (!prateleiraId) return;
+    const request = async (url, options = {}) => {
+      const response = await fetch(url, {...options, headers: {Accept: 'application/json'}, cache: 'no-store', signal: AbortSignal.timeout(8000)});
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.erro || 'Não foi possível solicitar a medição.');
+      return data;
+    };
+    button.disabled = true;
+    form.setAttribute('aria-busy', 'true');
+    status.hidden = false;
+    conta.hidden = true;
+    status.textContent = 'Aguardando o sensor. Isso pode levar até 30 segundos…';
+    try {
+      const body = new URLSearchParams({prateleira_id: prateleiraId, csrf_token: button.dataset.csrf});
+      const pedido = await request('api/medicao.php', {method: 'POST', body});
+      const deadline = Date.now() + 35000;
+      while (Date.now() < deadline) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        if (!form.isConnected || select.value !== prateleiraId) return;
+        const data = await request(`api/medicao.php?pedido_id=${pedido.pedido_id}`);
+        if (data.estado === 'concluido') {
+          if (String(data.prateleira_id) !== prateleiraId) throw new Error('A prateleira mudou. Faça uma nova medição.');
+          const total = Number(data.capacidade_m3) * Number(data.percentual_ocupado) / 100;
+          const registrado = Number(data.volume_registrado_m3);
+          const novo = Math.round((total - registrado) * 1e7) / 1e7;
+          if (!Number.isFinite(novo) || novo <= 0) {
+            status.textContent = 'A leitura não indicou volume novo. Confira os produtos e preencha manualmente se necessário.';
+            return;
+          }
+          const livre = Number(data.capacidade_m3) - registrado;
+          if (novo > livre + 1e-7) throw new Error('A leitura excedeu o espaço livre. Confira a posição do sensor.');
+          volume.value = novo.toFixed(7);
+          volume.dispatchEvent(new Event('input', {bubbles: true}));
+          const format = value => Number(value).toLocaleString('pt-BR', {maximumFractionDigits: 7});
+          conta.hidden = false;
+          conta.textContent = `Total medido: ${format(total)} m³ − já registrado: ${format(registrado)} m³ = novo volume: ${format(novo)} m³.`;
+          status.textContent = `Volume novo estimado: ${format(novo)} m³ (${format(data.percentual_ocupado)}% ocupado no total). Confira antes de registrar.`;
+          return;
+        }
+        if (data.estado === 'erro') throw new Error(data.erro || 'O sensor não conseguiu medir.');
+        if (data.estado === 'expirado') break;
+      }
+      throw new Error('O sensor não respondeu. Confira a energia e o Wi-Fi do ESP32 e tente novamente.');
+    } catch (error) {
+      if (select.value === prateleiraId) status.textContent = error.name === 'TimeoutError' || error instanceof TypeError ? 'Falha na conexão. Confira a rede e tente novamente.' : error.message;
+    } finally {
+      button.disabled = false;
+      form.removeAttribute('aria-busy');
+    }
+  });
+  function atualizarBotaoMedicao() {
+    const form = document.querySelector('form[action="actions/cadastrar_ocupacao.php"]');
+    if (!form) return;
+    const select = form.querySelector('[name="prateleira_id"]');
+    const button = form.querySelector('[data-medir-ocupacao]');
+    const status = form.querySelector('[data-medicao-ocupacao-status]');
+    const conta = form.querySelector('[data-medicao-conta]');
+    const update = () => {
+      button.hidden = select.selectedOptions[0]?.dataset.sensor !== '1';
+      status.hidden = true;
+      status.textContent = '';
+      conta.hidden = true;
+    };
+    select.addEventListener('change', update);
+    update();
+  }
   themeLabel(); initialize();
+  atualizarBotaoMedicao();
 })();

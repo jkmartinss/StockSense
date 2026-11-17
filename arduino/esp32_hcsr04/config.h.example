@@ -1,0 +1,5 @@
+// Copie para config.h e preencha os dados da rede e do dispositivo.
+const char* WIFI_SSID = "SEU_WIFI";
+const char* WIFI_SENHA = "SUA_SENHA";
+const char* API_URL = "http://IP_DO_COMPUTADOR/StockSense/api/leitura.php";
+const char* TOKEN = "TOKEN_DO_DISPOSITIVO";

@@ -137,7 +137,7 @@ foreach (["produto","setor","volume_m3","data_entrada","observacao"] as $campo) 
             <div class="campo">
                 <label for="volume_m3">Volume ocupado (m³)</label>
                 <input type="number" name="volume_m3" id="volume_m3"
-                       step="0.01" min="0.01" <?= $volumeMaximo !== null ? 'max="' . e($volumeMaximo) . '"' : '' ?>
+                       step="0.0000001" min="0.0000001" <?= $volumeMaximo !== null ? 'max="' . e($volumeMaximo) . '"' : '' ?>
                        value="<?= e($ocupacao["volume_m3"]) ?>" required>
             </div>
 

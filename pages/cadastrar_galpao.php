@@ -47,7 +47,7 @@ $dados = $flash["dados"];
             <div class="campo">
                 <label for="metros_cubicos">Capacidade (m³)</label>
                 <input type="number" name="metros_cubicos" id="metros_cubicos"
-                       placeholder="Ex: 500" min="0.01" step="0.01" required>
+                       placeholder="Ex: 500" min="0.0000001" step="0.0000001" required>
                 <span class="dica">Volume total que o galpão comporta.</span>
             </div>
 

@@ -73,7 +73,7 @@ CREATE TABLE galpoes (
 
     descricao VARCHAR(255),
 
-    metros_cubicos DECIMAL(10,2) DEFAULT 0.00,
+    metros_cubicos DECIMAL(15,7) DEFAULT 0.00,
 
     ativo TINYINT(1) NOT NULL DEFAULT 1,
 
@@ -99,7 +99,7 @@ CREATE TABLE prateleiras (
 
     descricao VARCHAR(255),
 
-    metros_cubicos DECIMAL(10,2) DEFAULT 0.00,
+    metros_cubicos DECIMAL(15,7) DEFAULT 0.00,
 
     setor VARCHAR(100),
 
@@ -134,7 +134,7 @@ CREATE TABLE ocupacoes (
 
     setor VARCHAR(100) NOT NULL,
 
-    volume_m3 DECIMAL(10,2) DEFAULT 0.00,
+    volume_m3 DECIMAL(15,7) DEFAULT 0.00,
 
     data_entrada DATE NOT NULL,
 
@@ -171,6 +171,8 @@ CREATE TABLE dispositivos (
     tipo_sensor VARCHAR(50) NOT NULL DEFAULT 'HC-SR04',
 
     token VARCHAR(128) NOT NULL UNIQUE,
+    distancia_vazia_cm DECIMAL(8,2) NOT NULL DEFAULT 22.30,
+    distancia_cheia_cm DECIMAL(8,2) NOT NULL DEFAULT 3.90,
 
     ativo TINYINT(1) NOT NULL DEFAULT 1,
 

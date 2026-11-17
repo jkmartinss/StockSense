@@ -133,3 +133,6 @@
     justify-content: space-between;
   }
 }
+.calibracao-form { display:flex; flex-wrap:wrap; align-items:end; gap:12px 16px; margin-top:20px; padding-top:18px; border-top:1px solid var(--borda); }
+.calibracao-form .campo { min-width:180px; flex:1; }
+.calibracao-form .texto-fraco { flex-basis:100%; }

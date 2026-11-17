@@ -100,7 +100,7 @@ $galpoes = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
                 <label for="metros_cubicos">Capacidade (m³)</label>
                 <input type="number" name="metros_cubicos" id="metros_cubicos"
                        value="<?= e($prateleira["metros_cubicos"]) ?>"
-                       min="0.01" step="0.01" required>
+                       min="0.0000001" step="0.0000001" required>
                 <span class="dica">
                     Alterar a capacidade recalcula o percentual de ocupação.
                 </span>

@@ -35,7 +35,9 @@ function consultar_prateleiras_estoque($conexao, $empresa, $galpaoId = 0)
         COALESCE((SELECT SUM(o.volume_m3) FROM ocupacoes o
             WHERE o.prateleira_id = p.id AND o.data_saida IS NULL), 0) AS volume_ocupado,
         (SELECT COUNT(*) FROM ocupacoes o
-            WHERE o.prateleira_id = p.id AND o.data_saida IS NULL) AS itens_armazenados
+            WHERE o.prateleira_id = p.id AND o.data_saida IS NULL) AS itens_armazenados,
+        (SELECT l.percentual_ocupado FROM leituras l WHERE l.prateleira_id=p.id ORDER BY l.id DESC LIMIT 1) AS pct_sensor,
+        (SELECT l.criado_em FROM leituras l WHERE l.prateleira_id=p.id ORDER BY l.id DESC LIMIT 1) AS sensor_criado_em
         FROM prateleiras p INNER JOIN galpoes g ON g.id = p.galpao_id
         WHERE g.empresa_id = ? AND (? = 0 OR g.id = ?)
         ORDER BY g.nome, p.codigo");

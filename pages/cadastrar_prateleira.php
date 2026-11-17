@@ -102,7 +102,7 @@ $galpoes = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
             <div class="campo">
                 <label for="metros_cubicos">Capacidade (m³)</label>
                 <input type="number" name="metros_cubicos" id="metros_cubicos"
-                       placeholder="Ex: 5" min="0.01" step="0.01"
+                       placeholder="Ex: 5" min="0.0000001" step="0.0000001"
                        value="<?= e($metros_cubicos) ?>" required>
             </div>
 

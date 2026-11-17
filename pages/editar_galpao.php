@@ -29,7 +29,7 @@ if (!$galpao) {
     header("Location: index.php?pagina=galpoes");
     exit;
 }
-$capacidadeMinima = max(0.01, capacidadeOcupadaGalpao($conexao, $id));
+$capacidadeMinima = max(0.0000001, capacidadeOcupadaGalpao($conexao, $id));
 foreach (["nome","descricao","metros_cubicos","ativo"] as $campo) {
     if (isset($dados[$campo])) $galpao[$campo] = $dados[$campo];
 }
@@ -73,7 +73,7 @@ foreach (["nome","descricao","metros_cubicos","ativo"] as $campo) {
                 <label for="metros_cubicos">Capacidade (m³)</label>
                 <input type="number" name="metros_cubicos" id="metros_cubicos"
                        value="<?= e($galpao["metros_cubicos"]) ?>"
-                       min="<?= e($capacidadeMinima) ?>" step="0.01" required>
+                       min="<?= e($capacidadeMinima) ?>" step="0.0000001" required>
             </div>
 
             <div class="campo">

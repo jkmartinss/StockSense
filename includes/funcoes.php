@@ -34,7 +34,9 @@ function quantidade($valor, $singular, $plural)
  */
 function m3($valor)
 {
-    return num($valor, 2) . " m³";
+    $formatado = rtrim(num($valor, 7), "0");
+    $casas = strlen(substr(strrchr($formatado, ","), 1));
+    return $formatado . str_repeat("0", max(0, 2 - $casas)) . " m³";
 }
 
 /**

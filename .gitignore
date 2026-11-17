@@ -30,3 +30,5 @@ desktop.ini
 *.backup
 # Credenciais do banco
 database/conexao.local.php
+arduino/esp32_hcsr04/config.h
+.test-tools/

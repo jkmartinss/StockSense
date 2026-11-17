@@ -24,6 +24,7 @@ $stmt = $conexao->prepare("
         p.codigo,
         p.metros_cubicos,
         g.nome AS galpao,
+        EXISTS (SELECT 1 FROM dispositivos d WHERE d.prateleira_id = p.id AND d.ativo = 1) AS tem_sensor,
         GREATEST(
             0,
             p.metros_cubicos - COALESCE((
@@ -97,7 +98,7 @@ $voltarPara = $prateleiraSelecionada > 0
                 <select name="prateleira_id" id="prateleira_id" required>
                     <option value="">Selecione uma prateleira</option>
                     <?php foreach ($prateleiras as $p): ?>
-                        <option data-livre="<?= e($p["livre"]) ?>" value="<?= $p["id"] ?>"
+                        <option data-livre="<?= e($p["livre"]) ?>" data-sensor="<?= (int) $p["tem_sensor"] ?>" value="<?= $p["id"] ?>"
                             <?= $p["id"] == $prateleiraSelecionada ? "selected" : "" ?>>
                             <?= e($p["galpao"]) ?> · <?= e($p["codigo"]) ?>
                             — <?= m3($p["livre"]) ?> disponíveis
@@ -125,7 +126,12 @@ $voltarPara = $prateleiraSelecionada > 0
             <div class="campo">
                 <label for="volume_m3">Volume ocupado (m³)</label>
                 <input type="number" name="volume_m3" id="volume_m3"
-                       step="0.01" min="0.01" value="<?= e($dados["volume_m3"] ?? "") ?>" placeholder="Ex: 2,00" required>
+                       step="0.0000001" min="0.0000001" value="<?= e($dados["volume_m3"] ?? "") ?>" placeholder="Ex: 2,00" required>
+                <button type="button" class="btn btn-neutro" data-medir-ocupacao data-csrf="<?= e(csrf_token()) ?>" hidden>
+                    <i class="fa-solid fa-ruler-vertical"></i> Medir agora
+                </button>
+                <span class="dica" role="status" aria-live="polite" data-medicao-ocupacao-status hidden></span>
+                <div class="medicao-conta" data-medicao-conta hidden aria-live="polite"></div>
             </div>
 
             <div class="campo">

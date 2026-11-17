@@ -1044,3 +1044,4 @@ footer {
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
 @media print { .filtros, .toasts, .acao-inline { display: none !important; } }
+.medicao-conta { padding:10px 12px; border:1px solid var(--borda); background:var(--azul-suave); border-radius:var(--raio-sm); font-variant-numeric:tabular-nums; }

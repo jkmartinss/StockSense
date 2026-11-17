@@ -75,6 +75,16 @@ $percentual = $capacidade > 0
 
 $status = status_ocupacao($percentual);
 
+$stmt = $conexao->prepare('SELECT id, distancia_vazia_cm, distancia_cheia_cm FROM dispositivos WHERE prateleira_id=? AND ativo=1 LIMIT 1');
+$stmt->bind_param('i', $id);
+$stmt->execute();
+$sensor = $stmt->get_result()->fetch_assoc();
+$temSensor = (bool) $sensor;
+$stmt = $conexao->prepare('SELECT distancia_cm, percentual_ocupado, criado_em FROM leituras WHERE prateleira_id=? ORDER BY id DESC LIMIT 1');
+$stmt->bind_param('i', $id);
+$stmt->execute();
+$ultimaLeitura = $stmt->get_result()->fetch_assoc();
+
 ?>
 
 <nav class="trilha">
@@ -185,6 +195,30 @@ $status = status_ocupacao($percentual);
 
 
 <!-- PRODUTOS -->
+<?php if ($temSensor): ?>
+<section class="card" data-medicao-card>
+    <div class="card-topo">
+        <div>
+            <h2>Ocupação pelo sensor</h2>
+            <p>Faça uma medição para estimar o espaço ocupado na caixa.</p>
+        </div>
+    </div>
+    <div class="card-corpo">
+        <p data-medicao-resultado><?= $ultimaLeitura ? e(num($ultimaLeitura['percentual_ocupado'], 1) . '% ocupado · Distância: ' . num($ultimaLeitura['distancia_cm'], 1) . ' cm · Última leitura: ' . $ultimaLeitura['criado_em']) : 'Nenhuma medição recebida.' ?></p>
+        <p class="texto-fraco">Para fazer uma nova medição, use Medir agora ao registrar uma ocupação.</p>
+        <form action="actions/calibrar_sensor.php" method="POST" class="calibracao-form">
+            <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="dispositivo_id" value="<?= (int) $sensor['id'] ?>">
+            <div class="campo"><label for="distancia_vazia_cm">Distância com a caixa vazia (cm)</label>
+                <input id="distancia_vazia_cm" name="distancia_vazia_cm" type="number" min="0.01" max="1000" step="0.01" value="<?= e($sensor['distancia_vazia_cm']) ?>" required></div>
+            <div class="campo"><label for="distancia_cheia_cm">Distância com a caixa cheia (cm)</label>
+                <input id="distancia_cheia_cm" name="distancia_cheia_cm" type="number" min="0.01" max="1000" step="0.01" value="<?= e($sensor['distancia_cheia_cm']) ?>" required></div>
+            <button type="submit" class="btn btn-neutro">Salvar calibração</button>
+            <p class="texto-fraco">A distância da caixa vazia deve ser maior. A alteração vale para as próximas medições.</p>
+        </form>
+    </div>
+</section>
+<?php endif; ?>
 
 <section class="card">
 

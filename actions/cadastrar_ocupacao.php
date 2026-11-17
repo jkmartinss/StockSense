@@ -40,10 +40,12 @@ exigir_propriedade(
     "ocupacoes"
 );
 
+// Bloqueia a prateleira até o fim do cadastro para serializar entradas simultâneas.
+$conexao->begin_transaction();
 // Verificar capacidade atual da prateleira.
 $sql = "SELECT p.metros_cubicos
         FROM prateleiras p INNER JOIN galpoes g ON g.id = p.galpao_id
-        WHERE p.id = ? AND p.ativo = 1 AND g.ativo = 1";
+        WHERE p.id = ? AND p.ativo = 1 AND g.ativo = 1 FOR UPDATE";
 
 $stmt = $conexao->prepare($sql);
 $stmt->bind_param("i", $prateleira_id);
@@ -52,6 +54,7 @@ $stmt->execute();
 $resultado = $stmt->get_result();
 
 if ($resultado->num_rows === 0) {
+    $conexao->rollback();
     voltar_com_erro(
         "../index.php?pagina=cadastrar_ocupacao",
         "A prateleira ou o galpão não está disponível para novas entradas."
@@ -77,6 +80,7 @@ $volume_atual = (float) $dados["volume_ocupado"];
 $novo_volume_total = $volume_atual + $volume_m3;
 
 if ($novo_volume_total > $capacidade) {
+    $conexao->rollback();
     voltar_com_erro(
         "../index.php?pagina=cadastrar_ocupacao&prateleira_id=" . $prateleira_id,
         "Não é possível registrar esta ocupação. A capacidade da prateleira é de " .
@@ -113,6 +117,7 @@ $stmt->bind_param(
 );
 
 if (!$stmt->execute()) {
+    $conexao->rollback();
     error_log("StockSense cadastrar_ocupacao: " . $stmt->error);
     voltar_com_erro(
         "../index.php?pagina=cadastrar_ocupacao&prateleira_id=" . $prateleira_id,
@@ -122,6 +127,7 @@ if (!$stmt->execute()) {
 
 // Uma única regra centralizada recalcula o percentual.
 atualizarPercentualPrateleira($conexao, $prateleira_id);
+$conexao->commit();
 
 concluir_acao("../index.php?pagina=detalhes_prateleira&id=" .
     $prateleira_id

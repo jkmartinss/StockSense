@@ -68,6 +68,8 @@ if ($percentual < 0 || $percentual > 100) {
 $sql = "SELECT
             d.id,
             d.prateleira_id,
+            d.distancia_vazia_cm,
+            d.distancia_cheia_cm,
             d.ativo AS dispositivo_ativo,
             p.ativo AS prateleira_ativa,
             g.ativo AS galpao_ativo
@@ -91,6 +93,7 @@ if (!$dispositivo || !$dispositivo["dispositivo_ativo"] || !$dispositivo["pratel
 
 $dispositivoId = (int) $dispositivo["id"];
 $prateleiraId = (int) $dispositivo["prateleira_id"];
+$percentual = round(max(0, min(100, ((float) $dispositivo['distancia_vazia_cm'] - $distancia) * 100 / ((float) $dispositivo['distancia_vazia_cm'] - (float) $dispositivo['distancia_cheia_cm']))), 2);
 
 $sql = "INSERT INTO leituras
             (dispositivo_id, prateleira_id, distancia_cm, percentual_ocupado)

@@ -352,3 +352,10 @@
   .kpis { grid-template-columns: minmax(0, 1fr); }
   .grupo-galpao-acoes { flex-wrap: wrap; }
 }
+.comparacao-sensor { margin-bottom:var(--gap); }
+.comparacao-lista { display:grid; }
+.comparacao-linha { display:grid; grid-template-columns:minmax(150px,2fr) repeat(2,minmax(95px,1fr)) minmax(140px,1.5fr) minmax(130px,1fr); align-items:center; gap:12px; padding:14px 24px; border-top:1px solid var(--borda); }
+.comparacao-linha:hover { background:var(--azul-suave); }
+.comparacao-linha small { color:var(--texto-fraco); }
+.comparacao-linha .etiqueta { justify-self:start; }
+@media (max-width:800px) { .comparacao-linha { grid-template-columns:repeat(2,minmax(0,1fr)); } .comparacao-linha strong,.comparacao-linha small { grid-column:1/-1; } }

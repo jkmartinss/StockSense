@@ -1,17 +1,14 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 
-const char* WIFI_SSID = "SEU_WIFI";
-const char* WIFI_SENHA = "SUA_SENHA";
-const char* API_URL = "http://SEU_SITE/api/leitura.php";
-const char* TOKEN = "COLOQUE_O_TOKEN_DO_DISPOSITIVO";
+#include "config.h"
 
-const int TRIG_PIN = 5;
-const int ECHO_PIN = 18;
+const int TRIG_PIN = 26;
+const int ECHO_PIN = 25;
 
-// Ajuste conforme a sua maquete.
-const float DISTANCIA_VAZIA_CM = 30.0;
-const float DISTANCIA_CHEIA_CM = 5.0;
+// Distancias medidas na maquete: vazio = 0%, cheio = 100%.
+const float DISTANCIA_VAZIA_CM = 22.3;
+const float DISTANCIA_CHEIA_CM = 3.9;
 
 float lerDistanciaCm() {
     digitalWrite(TRIG_PIN, LOW);
@@ -26,7 +23,7 @@ float lerDistanciaCm() {
         return -1;
     }
 
-    return duracao / 58.0;
+    return duracao * 0.0343f / 2.0f;
 }
 
 float calcularPercentual(float distancia) {
@@ -37,20 +34,31 @@ float calcularPercentual(float distancia) {
     return constrain(percentual, 0.0, 100.0);
 }
 
-void enviarLeitura(float distancia, float percentual) {
+String urlMedicao() {
+    String url = API_URL;
+    return url.substring(0, url.lastIndexOf('/') + 1) + "medicao_dispositivo.php";
+}
+
+void enviarLeitura(long pedido, float distancia, float percentual) {
     if (WiFi.status() != WL_CONNECTED) {
         return;
     }
 
     HTTPClient http;
-    http.begin(API_URL);
-    http.addHeader("Content-Type", "application/json");
+    http.setTimeout(5000);
+    http.begin(urlMedicao());
+    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
     http.addHeader("X-Device-Token", TOKEN);
 
-    String json = "{\"distancia_cm\":" + String(distancia, 2) +
-                  ",\"percentual_ocupado\":" + String(percentual, 2) + "}";
+    String dados = "pedido_id=" + String(pedido);
+    if (distancia < 0) {
+        dados += "&erro=sem_eco";
+    } else {
+        dados += "&distancia_cm=" + String(distancia, 2) +
+                 "&percentual_ocupado=" + String(percentual, 2);
+    }
 
-    int codigo = http.POST(json);
+    int codigo = http.POST(dados);
 
     Serial.print("HTTP: ");
     Serial.println(codigo);
@@ -66,18 +74,41 @@ void setup() {
     pinMode(ECHO_PIN, INPUT);
 
     WiFi.begin(WIFI_SSID, WIFI_SENHA);
+    WiFi.setAutoReconnect(true);
 
     Serial.print("Conectando ao Wi-Fi");
-    while (WiFi.status() != WL_CONNECTED) {
+    unsigned long inicio = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - inicio < 15000) {
         delay(500);
         Serial.print(".");
     }
 
     Serial.println();
-    Serial.println("Wi-Fi conectado.");
+    Serial.println(WiFi.status() == WL_CONNECTED ? "Wi-Fi conectado. Aguardando Medir agora no site." : "Wi-Fi indisponivel. Tentando reconectar...");
 }
 
 void loop() {
+    // Consulta somente pedidos; o sensor so mede depois do clique no site.
+    delay(2000);
+    if (WiFi.status() != WL_CONNECTED) {
+        WiFi.reconnect();
+        return;
+    }
+    HTTPClient http;
+    http.setTimeout(5000);
+    http.begin(urlMedicao());
+    http.addHeader("X-Device-Token", TOKEN);
+    int codigo = http.GET();
+    String resposta = codigo == 200 ? http.getString() : "0";
+    http.end();
+    if (codigo != 200) {
+        Serial.print("Falha ao consultar pedido. HTTP: ");
+        Serial.println(codigo);
+        return;
+    }
+    long pedido = resposta.toInt();
+    if (pedido <= 0) return;
+
     float distancia = lerDistanciaCm();
 
     if (distancia >= 0) {
@@ -89,10 +120,10 @@ void loop() {
         Serial.print(percentual, 2);
         Serial.println("%");
 
-        enviarLeitura(distancia, percentual);
+        enviarLeitura(pedido, distancia, percentual);
     } else {
         Serial.println("Falha na leitura do HC-SR04.");
+        enviarLeitura(pedido, -1, 0);
     }
 
-    delay(5000);
 }

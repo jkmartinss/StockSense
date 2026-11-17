@@ -55,6 +55,15 @@ if ($resultado->num_rows === 0) {
 
 $ocupacao = $resultado->fetch_assoc();
 $prateleira_id = (int) $ocupacao["prateleira_id"];
+$conexao->begin_transaction();
+$bloqueio = $conexao->prepare('SELECT id FROM prateleiras WHERE id=? FOR UPDATE');
+$bloqueio->bind_param('i', $prateleira_id);
+$bloqueio->execute();
+$bloqueio->get_result()->fetch_assoc();
+$atual = $conexao->prepare('SELECT data_saida FROM ocupacoes WHERE id=?');
+$atual->bind_param('i', $id);
+$atual->execute();
+$ocupacao['data_saida'] = $atual->get_result()->fetch_assoc()['data_saida'] ?? null;
 
 // Se ainda estiver armazenada, verificar se o novo volume cabe.
 if ($ocupacao["data_saida"] === null) {
@@ -70,6 +79,7 @@ if ($ocupacao["data_saida"] === null) {
     $resultado = $stmt->get_result();
 
     if ($resultado->num_rows === 0) {
+        $conexao->rollback();
         voltar_com_erro(
             "../index.php?pagina=editar_ocupacao&id=" . $id,
             "Prateleira não encontrada ou está inativa."
@@ -92,6 +102,7 @@ if ($ocupacao["data_saida"] === null) {
     $novo_total = $outros_volumes + $volume_m3;
 
     if ($novo_total > $capacidade) {
+        $conexao->rollback();
         voltar_com_erro(
             "../index.php?pagina=editar_ocupacao&id=" . $id,
             "Não é possível atualizar. A capacidade da prateleira é de " .
@@ -121,6 +132,7 @@ $stmt->bind_param(
 );
 
 if (!$stmt->execute()) {
+    $conexao->rollback();
     error_log("StockSense atualizar_ocupacao: " . $stmt->error);
     voltar_com_erro(
         "../index.php?pagina=editar_ocupacao&id=" . $id,
@@ -130,6 +142,7 @@ if (!$stmt->execute()) {
 
 // Regra centralizada.
 atualizarPercentualPrateleira($conexao, $prateleira_id);
+$conexao->commit();
 
 concluir_acao("../index.php?pagina=detalhes_prateleira&id=" .
     $prateleira_id

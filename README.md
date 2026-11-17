@@ -191,6 +191,39 @@ Como uma credencial de banco foi enviada no arquivo original, troque essa senha 
 
 Foi adicionada a API `api/leitura.php`. O ESP envia um token, a distância em centímetros e o percentual calculado pelo sensor. A leitura é gravada em `leituras` e o valor mais recente fica em `prateleiras.pct_sensor`. O `pct_ocupado` continua representando a ocupação registrada manualmente, para permitir comparação depois no dashboard.
 
-Para um banco já existente, rode `database/migracao_arduino.sql` uma única vez. Depois cadastre um registro em `dispositivos` com a prateleira e o token do sensor.
+Para um banco já existente, execute `php database/atualizar.php` pela linha de comando. O atualizador verifica o que falta e pode ser executado novamente. Depois cadastre um registro em `dispositivos` com a prateleira e o token do sensor.
 
 Um exemplo de ESP32 + HC-SR04 está em `arduino/esp32_hcsr04/esp32_hcsr04.ino`. Ajuste Wi-Fi, URL da API, token e as distâncias de vazio/cheio da maquete.
+
+### Medição pelo botão do site
+
+Execute `php database/atualizar.php` no banco existente. Copie
+`arduino/esp32_hcsr04/config.h.example` para `config.h` e configure rede,
+URL de `api/leitura.php` e token do dispositivo. A configuração local fica fora do Git.
+Grave o programa atualizado na placa; versões antigas continuam enviando automaticamente.
+
+No formulário **Registrar ocupação**, escolha uma prateleira com sensor ativo e
+clique em **Medir agora**. O ESP32 consulta pedidos a cada dois segundos e só
+aciona o sensor quando houver solicitação. Cada pedido vence em 30 segundos.
+A leitura estima o volume total na caixa; o formulário desconta o volume já
+registrado e preenche o volume novo. Confira a estimativa antes de salvar.
+Os detalhes da prateleira mostram a última leitura do sensor, separada da
+ocupação cadastrada manualmente.
+O computador e a placa precisam conseguir comunicar pela rede; mantenha Apache e MySQL ativos.
+
+Em **Detalhes da prateleira**, altere as distâncias de caixa vazia e cheia e
+salve a calibração. As próximas medições usam os valores do banco, sem precisar
+gravar novamente o ESP32. O painel compara a última medição com o volume
+cadastrado e identifica leituras com mais de 24 horas. Ao registrar uma
+ocupação, o formulário mostra a conta entre volume total medido, volume já
+registrado e volume novo sugerido. O servidor protege o cadastro de entradas
+simultâneas acima da capacidade.
+
+`database/atualizar.php` aplica as alterações pendentes de sensor, precisão,
+medição manual e calibração; pode ser executado novamente. Nunca execute
+`database/stocksense.sql` sobre um banco com dados, pois esse arquivo recria
+o banco para uma instalação nova.
+
+Para verificar o fluxo HTTP local com dados temporários, execute
+`php tests/medicao_integracao.php`. O teste cria e remove uma empresa de teste,
+verifica autenticação, isolamento, expiração, erro do sensor e reenvios.
