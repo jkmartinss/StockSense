@@ -1,0 +1,10 @@
+#pragma once
+// Copie para config.h. A tela Sensores tambem gera este arquivo com URL e token.
+const char* WIFI_SSID = "SEU_WIFI_2_4_GHZ";
+const char* WIFI_SENHA = "SUA_SENHA";
+const char* API_URL = "https://stocksense.147.15.2.73.sslip.io/api/medicao_dispositivo.php";
+const char* TOKEN = "TOKEN_DO_DISPOSITIVO";
+#define STOCKSENSE_TRIG_PIN 26
+#define STOCKSENSE_ECHO_PIN 25
+// Somente para testes HTTP em uma rede local. Mantenha 0 no deploy publico.
+#define STOCKSENSE_HTTP_LOCAL 0

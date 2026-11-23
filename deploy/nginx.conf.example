@@ -1,0 +1,32 @@
+# EXEMPLO: adapte ao bloco existente e ao PHP-FPM da VM. Não sobrescreva o proxy.
+server {
+    listen 80;
+    server_name stocksense.147.15.2.73.sslip.io;
+    # Se o HTTPS já termina no proxy, mantenha o TLS/redirect na configuração dele.
+    root /var/www/StockSense;
+    index index.php;
+    client_max_body_size 1m;
+
+    # Estas regras devem vir antes da regra genérica de PHP.
+    location ~ ^/(database|includes|pages|arduino|tests|tools|deploy)(/|$) { return 403; }
+    location ~ /\. { return 403; }
+    location ~* \.(sql|ini|env|log|bak|backup|zip|key|pem)$ { return 403; }
+
+    location / { try_files $uri $uri/ =404; }
+    location ~ ^/api/[a-z_]+\.php$ {
+        try_files $uri =404;
+        # Sem proxy_cache / fastcgi_cache nas rotas da API.
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param HTTP_X_DEVICE_TOKEN $http_x_device_token;
+        fastcgi_no_cache 1;
+        fastcgi_cache_bypass 1;
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock; # Ajustar à VM
+    }
+    location ~ \.php$ {
+        try_files $uri =404;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+    }
+}

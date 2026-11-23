@@ -1,0 +1,7 @@
+<?php
+// Copie este arquivo para conexao.local.php e preencha os dados do seu banco.
+$host = 'localhost';
+$usuario = 'root';
+$senha = '';
+$banco = 'stocksense';
+$porta = 3306;
